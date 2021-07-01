@@ -12,6 +12,13 @@ from matplotlib import pyplot as plt
 from scipy.signal import find_peaks, argrelextrema
 
 
+def getImageVar(img_path):
+    image = cv2.imread(img_path)
+    img2gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    imageVar = cv2.Laplacian(img2gray, cv2.CV_64F).var()
+    return imageVar
+
+
 class W(object):
 
     def __init__(self):
@@ -50,7 +57,7 @@ class W(object):
             "valleys_diff": float(self.valleys_diff),
             "distance": (float(self.distance_1), float(self.distance_2))
         }
-        return json.dumps(data, indent=4)
+        return json.dumps(data)
 
     def __set_diffs(self):
         """
@@ -86,14 +93,6 @@ class W(object):
         self.__set_distance()
 
     def add(self, point: (int, float)):
-        """
-        定义业务规则,只允许传入五个值，分别为两个低点，三个最高点
-        即：
-            a1          a2          a3
-              -       -   -       -
-                -   -       -   -
-                  b1          b2
-        """
         self.points.append((float(point[0]), float(point[1])))
         x, y = point[0], point[1]
         if y >= self.highest_value:
@@ -107,6 +106,11 @@ class W(object):
         if len(self.points) >= 5:
             return True
         return False
+
+    def is_distance_(self) -> (bool, float):
+        if abs(self.distance_2 - self.distance_1) / (self.distance_1 + self.distance_2) <= .25:
+            return True, abs(self.distance_2 - self.distance_1) / (self.distance_1 + self.distance_2)
+        return False, sys.maxsize
 
 
 class DensityMap(object):
@@ -141,19 +145,21 @@ class DensityMap(object):
         self.peaks, _ = find_peaks(self.radial_count, height=0)
         # 峰谷点
         self.valleys = argrelextrema(-self.radial_count, np.greater)[0]
+        if self.peaks[0] > self.valleys[0]:
+            np.delete(self.valleys, 0)
 
         # 滤波
-        peaks, valleys = set(self.peaks), set(self.valleys)
-        for p in self.peaks:
-            if p-1 in valleys or p+1 in valleys:
-                if ((self.radial_count[p] - self.radial_count[p-1]) / self.radial_count[p]) < 0.1:
-                    peaks = peaks - {p}
-                    valleys = valleys - {p-1}
-                elif ((self.radial_count[p] - self.radial_count[p + 1]) / self.radial_count[p]) < 0.1:
-                    peaks = peaks - {p}
-                    valleys = valleys - {p + 1}
-
-        self.peaks, self.valleys = np.array(sorted(peaks)), np.array(sorted(valleys))
+        # peaks, valleys = set(self.peaks), set(self.valleys)
+        # for p in self.peaks:
+        #     if p-1 in valleys or p+1 in valleys:
+        #         if ((self.radial_count[p] - self.radial_count[p-1]) / self.radial_count[p]) < 0.1:
+        #             peaks = peaks - {p}
+        #             valleys = valleys - {p-1}
+        #         elif ((self.radial_count[p] - self.radial_count[p + 1]) / self.radial_count[p]) < 0.1:
+        #             peaks = peaks - {p}
+        #             valleys = valleys - {p + 1}
+        #
+        # self.peaks, self.valleys = np.array(sorted(peaks)), np.array(sorted(valleys))
 
     def __high_and_low_peaks(self) -> list:
         """
@@ -163,8 +169,15 @@ class DensityMap(object):
         w = W()
         peaks_num, valleys_num = 0, 0
 
+        #
+        #
         # valleys_data = self.radial_count[self.valleys]
         # peaks_data = self.radial_count[self.peaks]
+        #
+        #
+        #
+        #
+        # while len(peaks_data) > 0:
 
         while peaks_num <= len(self.peaks) - 2 or valleys_num <= len(self.valleys) - 2:
             if w.is_correct():
@@ -193,34 +206,44 @@ class DensityMap(object):
         for i in ws:
             distance_avg += (i.distamce1 + i.distamce2) / 2
         distance_avg = distance_avg / len(ws)
-        print(distance_avg, "平均值")
 
         t = np.zeros(len(ws) * 2)
         num = 0
         for i in ws:
             t[num] += i.distamce1
-            t[num+1] += i.distamce2
+            t[num + 1] += i.distamce2
             num += 2
-        print(np.std(t), "标准差")
 
+        std = np.std(t)
+        if std >= distance_avg * .5:
+            return None
+        print("std", std)
+        big_std = std + distance_avg
+
+        new_ws = []
         for i in ws:
-            if distance_avg * 0.4 < i.distamce1 < distance_avg * 1.2 and distance_avg * 0.4 < i.distamce2 < distance_avg * 1.2:
+            if i.distamce1 < big_std or i.distamce2 < big_std:
+                new_ws.append(i)
+
+        for i in new_ws:
+            err, distance_w = i.is_distance_()
+            if err:
                 data.append({
                     "diff": i.peaks_diff + i.valleys_diff,
                     "distance": (i.distamce1 + i.distamce2) / 2,
+                    "distance_w": distance_w,
+                    "i": i
                 })
+        data.sort(key=lambda dw: dw["distance_w"])
 
-        data.sort(key=lambda distance: distance["distance"])
-        data_len = len(data)
-
-        data = data[int(data_len * .33): int(data_len - data_len * .33)]
-
-        # data.sort(key=lambda diff: diff["diff"])
+        if len(data) > 10:
+            data = data[:10]
+        print("len", len(data))
 
         density = 0
         for i in data:
             density += i["distance"]
-        return density / len(data)
+        return density / float(len(data))
 
 
 class DensityMapTool(DensityMap):
@@ -248,7 +271,7 @@ class DensityMapTool(DensityMap):
         ax.plot(self.peaks, self.radial_count[self.peaks], "x", color="red", label='peaks')
 
         # 峰谷点
-        ax.plot(self.valleys, self.radial_count[self.valleys], "o", color="green", label="valleys")
+        ax.plot(self.valleys, self.radial_count[self.valleys], "+", color="green", label="valleys")
 
         # 移动平均
         N = 5
@@ -262,29 +285,13 @@ class DensityMapTool(DensityMap):
 
 
 if __name__ == "__main__":
+    import os
+    for p in ["t0.png", "t0.3.png", "t0.5.png", "t1.0.png"]:
+        print("-"*20)
+        path = os.path.join("test5_gs", p)
+        print(f"{p}: {getImageVar(path)}")
 
-    # for item in range(1, 5):
-    #     print("-" * 20)
-    #     path = f"test2/t2-{item}.png"
-    #     img = cv2.imread(path, 0)
-    #     a = DensityMapTool(image=img)
-    #     a.write_2D(out_path=f"test2/t2-{item}-2D.png")
-    #     print(path, ":", a.get_density())
-    # for item in range(1, 7):
-    #     print("-"*20)
-    #     path = f"test2/t1-{item}.png"
-    #     img = cv2.imread(path, 0)
-    #     a = DensityMapTool(image=img)
-    #     # a.write_2D(out_path=f"test2/t1-{item}-2D.png")
-    #     print(path, ":", a.get_density())
-
-    # path = "test_img/test-re-12.png"
-    # # path = "test_img/test-re-8.png"
-    # path = "test2/t1-1.png"
-    # path = "test_img/test-re-10.png"
-    path = "test3/t1.png"
-
-    img = cv2.imread(path, 0)
-    a = DensityMapTool(image=img)
-    a.write_2D(out_path="test3/test-out.png")
-    a.get_density()
+        img = cv2.imread(path, 0)
+        a = DensityMapTool(image=img)
+    # a.write_2D(out_path="test4/test-out.png")
+        print(a.get_density())

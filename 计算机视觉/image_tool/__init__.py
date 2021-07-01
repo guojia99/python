@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+from cv2 import cv2
 from PIL import Image
 from imageio import imsave
 
@@ -20,3 +21,9 @@ class ImageTool(GrayProcessing, Enhance, Outline):
         img_tailoring = image.crop((x1, y1, x2, y2))
         im = np.array(img_tailoring)
         imsave(out_path, im)
+
+    @staticmethod
+    def get_image_var(path: str) -> float:
+        image = cv2.imread(path)
+        image2gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        return cv2.Laplacian(image2gray, cv2.CV_64F).var()
