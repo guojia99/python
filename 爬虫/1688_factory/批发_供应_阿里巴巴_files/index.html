@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<!-- saved from url=(0130)https://xstore.insights.1688.com/index.html?at_iframe=1&versionId=CAEQDRiBgMCU.J2SwRciIDBjMmQ3OTM3MDMyMzRhYWVhODlhMjg2OTY0ODNjMTM3 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Emogine cross origin localstorage hub</title>
+    
+    <script type="text/javascript">
+      (function(a){var b={};b.init=function(c){var d=true;try{if(!window.localStorage){d=false}}catch(f){d=false}if(!d){try{return window.parent.postMessage("cross-storage:unavailable","*")}catch(f){return}}b._permissions=c||[];b._installListener();window.parent.postMessage("cross-storage:ready","*")};b._installListener=function(){var c=b._listener;if(window.addEventListener){window.addEventListener("message",c,false)}else{window.attachEvent("onmessage",c)}};b._listener=function(j){var i,g,f,c,h,k,e;i=(j.origin==="null")?"file://":j.origin;if(j.data==="cross-storage:poll"){return window.parent.postMessage("cross-storage:ready",j.origin)}if(j.data==="cross-storage:ready"){return}try{f=JSON.parse(j.data)}catch(d){return}if(!f||typeof f.method!=="string"){return}c=f.method.split("cross-storage:")[1];if(!c){return}else{if(!b._permitted(i,c)){h="Invalid permissions for "+c}else{try{k=b["_"+c](f.params)}catch(d){h=d.message}}}e=JSON.stringify({id:f.id,error:h,result:k});g=(i==="file://")?"*":i;window.parent.postMessage(e,g)};b._permitted=function(c,h){var g,e,f,d;g=["get","set","del","clear","getKeys"];if(!b._inArray(h,g)){return false}for(e=0;e<b._permissions.length;e++){f=b._permissions[e];if(!(f.origin instanceof RegExp)||!(f.allow instanceof Array)){continue}d=f.origin.test(c);if(d&&b._inArray(h,f.allow)){return true}}return false};b._set=function(c){window.localStorage.setItem(c.key,c.value)};b._get=function(h){var j,c,d,f;j=window.localStorage;c=[];for(d=0;d<h.keys.length;d++){try{f=j.getItem(h.keys[d])}catch(g){f=null}c.push(f)}return(c.length>1)?c:c[0]};b._del=function(d){for(var c=0;c<d.keys.length;c++){window.localStorage.removeItem(d.keys[c])}};b._clear=function(){window.localStorage.clear()};b._getKeys=function(f){var c,e,d;d=[];e=window.localStorage.length;for(c=0;c<e;c++){d.push(window.localStorage.key(c))}return d};b._inArray=function(d,e){for(var c=0;c<e.length;c++){if(d===e[c]){return true}}return false};b._now=function(){if(typeof Date.now==="function"){return Date.now()}return new Date().getTime()};if(typeof module!=="undefined"&&module.exports){module.exports=b}else{if(typeof exports!=="undefined"){exports.CrossStorageHub=b}else{if(typeof define==="function"&&define.amd){define([],function(){return b})}else{a.CrossStorageHub=b}}}}(this));
+    </script>
+    <script>
+      CrossStorageHub.init([
+        { origin: /.*/, allow: ['get', 'set', 'del', 'clear', 'getKeys'] }
+      ]);
+    </script>
+  </head>
+  <body>
+    SUCCESS
+  
+  
+
+</body></html>
