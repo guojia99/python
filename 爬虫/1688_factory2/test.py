@@ -5,6 +5,11 @@ from selenium.webdriver.common.keys import Keys
 import time
 import csv
 
+import sys
+
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 
 class S1688(object):
     def __init__(self, url, username, password):
@@ -59,11 +64,11 @@ class S1688(object):
     def function(self):
 
         self.init()
-        page_end = 33
+        page_end = 50
         print "page is", page_end
 
         for page in range(1, page_end):
-            time.sleep(3)
+            time.sleep(1)
             try:
                 # self.find_time_sleep()
                 product = self.driver.find_elements_by_class_name("company-offer-contain")
@@ -87,27 +92,27 @@ class S1688(object):
 
         # 写入标题，采集企业名称，主页，产品，联系人，电话和地址信息
         self.writer.writerow((
-            u'企业名称'.encode('gbk'),
-            u'主页链接'.encode('gbk'),
-            u'年限'.encode('gbk'),
-            u'地址'.encode('gbk'),
-            u'交易数'.encode('gbk'),
-            u'主营业务'.encode('gbk')
+            '企业名称',
+            '主页链接',
+            '年限',
+            '地址',
+            '交易数',
+            '主营业务'
 
         ))
         for item in self.data:
             self.writer.writerow((
-                unicode(item["title"]).encode('gbk'),
-                unicode(item["href"]).encode('gbk'),
-                unicode(item["year"]).encode('gbk'),
-                unicode(item["position"]).encode('gbk'),
-                unicode(item["info"]).encode('gbk'),
-                unicode(item["craft_content"]).encode('gbk')
+                str(item["title"]),
+                str(item["href"]),
+                str(item["year"]),
+                str(item["position"]),
+                str(item["info"]),
+                str(item["craft_content"])
             ))
         self.csvfile.close()
 
 
 if __name__ == "__main__":
-    uri = "https://s.1688.com/company/company_search.htm?spm=a26352.15231885.filtbar.4.5e601e62jFHECi&keywords=%BB%FA%D0%B5%B1%DB&filt=y&memberTags=205185#sm-filtbar"
+    uri = "https://s.1688.com/company/company_search.htm?keywords=%B5%E7%C5%AF%C6%F7&spm=a26352.13672862.searchbox.input"
     t = S1688(url=uri, username="15089512105", password="linwanting123")
     t.function()
