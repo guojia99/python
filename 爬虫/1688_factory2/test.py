@@ -1,22 +1,19 @@
 # coding:utf-8
+import traceback
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
 import time
-import urllib
-import urllib2
-import sys
-import os
-import re
 import csv
-import numpy as np
 
 
 class S1688(object):
-    def __init__(self, url):
+    def __init__(self, url, username, password):
         self.url = url
+        self.username = username
+        self.pwd = password
     
     def init(self):
+        self.data = []
         self.driver = webdriver.Firefox()  # 打开一个浏览器
         time.sleep(5)  # 睡眠5秒，防止浏览器还没打开就进行了其他操作
         login_url = 'https://login.taobao.com/member/login.jhtml'  # 登录的url
@@ -24,30 +21,19 @@ class S1688(object):
         time.sleep(5)  # 睡眠5秒，防止网速较差打不开网页就进行了其他操作
 
         # 找到账号登录框的DOM节点，并且在该节点内输入账号
-        self.driver.find_element_by_name("TPL_username").send_keys('梦似空月')
+        self.driver.find_element_by_name("fm-login-id").send_keys(self.username)
         # 找到账号密码框的DOM节点，并且在该节点内输入密码
-        self.driver.find_element_by_name("TPL_password").send_keys('linwanting123')
+        self.driver.find_element_by_name("fm-login-password").send_keys(self.pwd)
         # 找到账号登录框的提交按钮，并且点击提交
-        self.driver.find_element_by_name("TPL_password").send_keys(Keys.ENTER)
+        self.driver.find_element_by_name("fm-login-password").send_keys(Keys.ENTER)
         time.sleep(5)  # 睡眠5秒，防止未登录就进行了其他操作
         
         self.driver.get(self.url)  # 跳转到指定页面的url
-        csvfile = open('data.csv', 'web')
-        writer = csv.writer(csvfile)
-
-        # 写入标题，我们采集企业名称，主页，产品，联系人，电话和地址信息
-        writer.writerow((
-            u'企业名称'.encode('gbk'),
-            u'主页'.encode('gbk'),
-            u'产品'.encode('gbk'),
-            u'联系人'.encode('gbk'),
-            u'电话'.encode('gbk'),
-            u'地址'.encode('gbk'),
-            u'年限'.encode('gbk')
-        ))
+        self.csvfile = open('data.csv', 'web')
+        self.writer = csv.writer(self.csvfile)
 
         # 构建agents防止反爬虫
-        user_agents = [
+        self.user_agents = [
             'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
             'Opera/9.25 (Windows NT 5.1; U; en)',
             'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1;.NET CLR 1.1.4322; .NET CLR2.0.50727)',
@@ -58,24 +44,70 @@ class S1688(object):
             "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0 ",
         ]
 
-    def function(self, page_s, page_end):
+    @staticmethod
+    def find_list_text(lt):
+        if len(lt) >= 1:
+            return lt[0].text
+        return "-"
+
+    @staticmethod
+    def find_time_sleep():
+        for item in range(10):
+            time.sleep(10)
+            print "time sleep: {}".format(item*10)
+
+    def function(self):
+
         self.init()
-        for page in range(page_s, page_end):
-            time.sleep(5)
+        page_end = 33
+        print "page is", page_end
+
+        for page in range(1, page_end):
+            time.sleep(3)
             try:
-                title = self.driver.find_elements_by_css_selector("a[class=list-item-title-text]")
-                product = self.driver.find_elements_by_xpath("//div[@class=\"list-item-detail\"]/div[1]/div[1]/a[1]")
-                print len(title), title, product
+                # self.find_time_sleep()
+                product = self.driver.find_elements_by_class_name("company-offer-contain")
+                for i in product:
+                    title = i.find_elements_by_class_name("company-name")
+                    self.data.append({
+                        "title": self.find_list_text(title),
+                        "href": (title[0].get_attribute("href") or "none link") + 'page/contactinfo.htm',
+                        "year": self.find_list_text(i.find_elements_by_class_name("integrity-year")),
+                        "position": self.find_list_text(i.find_elements_by_class_name("position-text")),
+                        "info": self.find_list_text(i.find_elements_by_class_name("company-info")),
+                        "craft_content": self.find_list_text(i.find_elements_by_class_name("main-craft-content")),
+                    })
+                page = self.driver.find_elements_by_css_selector("a[class=fui-next]")[0]
+                page.click()
             except:
                 print 'page_error:', page
+                traceback.print_exc()
                 continue
+        self.driver.close()
+
+        # 写入标题，采集企业名称，主页，产品，联系人，电话和地址信息
+        self.writer.writerow((
+            u'企业名称'.encode('gbk'),
+            u'主页链接'.encode('gbk'),
+            u'年限'.encode('gbk'),
+            u'地址'.encode('gbk'),
+            u'交易数'.encode('gbk'),
+            u'主营业务'.encode('gbk')
+
+        ))
+        for item in self.data:
+            self.writer.writerow((
+                unicode(item["title"]).encode('gbk'),
+                unicode(item["href"]).encode('gbk'),
+                unicode(item["year"]).encode('gbk'),
+                unicode(item["position"]).encode('gbk'),
+                unicode(item["info"]).encode('gbk'),
+                unicode(item["craft_content"]).encode('gbk')
+            ))
+        self.csvfile.close()
+
 
 if __name__ == "__main__":
-    uri = "https://s.1688.com/company/company_search.htm?keywords=%C5%AF%C6%F8&button_click=top&n=y&netType=1%2C11"
-    t = S1688(uri)
-    t.function(1, 2)
-
-    
-
-    
-
+    uri = "https://s.1688.com/company/company_search.htm?spm=a26352.15231885.filtbar.4.5e601e62jFHECi&keywords=%BB%FA%D0%B5%B1%DB&filt=y&memberTags=205185#sm-filtbar"
+    t = S1688(url=uri, username="15089512105", password="linwanting123")
+    t.function()
