@@ -18,6 +18,7 @@ class S1688(object):
         self.pwd = password
     
     def init(self):
+        self.csvfile = open('data.csv', 'wb')
         self.data = []
         self.driver = webdriver.Firefox()  # 打开一个浏览器
         time.sleep(5)  # 睡眠5秒，防止浏览器还没打开就进行了其他操作
@@ -34,7 +35,6 @@ class S1688(object):
         time.sleep(5)  # 睡眠5秒，防止未登录就进行了其他操作
         
         self.driver.get(self.url)  # 跳转到指定页面的url
-        self.csvfile = open('data.csv', 'web')
         self.writer = csv.writer(self.csvfile)
 
         # 构建agents防止反爬虫
@@ -68,9 +68,17 @@ class S1688(object):
         print "page is", page_end
 
         for page in range(1, page_end):
+            self.driver.execute_script("window.scrollTo(0,1000);")
             time.sleep(1)
+            self.driver.execute_script("window.scrollTo(0,2000);")
+            time.sleep(2)
+            self.driver.execute_script("window.scrollTo(0,4000);")
+            time.sleep(1)
+            self.driver.execute_script("window.scrollTo(0,1000);")
+            time.sleep(2)
+            self.driver.execute_script("window.scrollTo(0,10000);")
+            time.sleep(5)
             try:
-                # self.find_time_sleep()
                 product = self.driver.find_elements_by_class_name("company-offer-contain")
                 for i in product:
                     title = i.find_elements_by_class_name("company-name")
@@ -96,10 +104,15 @@ class S1688(object):
             '主页链接',
             '年限',
             '地址',
-            '交易数',
+            '其他信息',
             '主营业务'
 
         ))
+        import json
+        f = open("data.json", 'wb')
+        f.write(json.dumps(self.data))
+        f.close()
+
         for item in self.data:
             self.writer.writerow((
                 str(item["title"]),

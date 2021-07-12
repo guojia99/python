@@ -391,10 +391,13 @@ class DensityTool(object):
 
 
 if __name__ == "__main__":
-    path = "/Users/caime/Desktop/guojiafile/python/计算机视觉/百布-test/test.png"
-    img = cv2.imread(path)
-    d = DensityTool(image=img)
-    print(d.get())
+    # path = "/Users/caime/Desktop/guojiafile/python/计算机视觉/百布-test/test.png"
+    path = "i2.jpg"
+    img = cv2.imread(path, 0)
+    d = Density(image=img)
+    d.write_2D(out_path="tes_out.jpg")
+    # d = DensityTool(image=img)
+    # print(d.get())
 
     # path = "test6/r1.png"
     # img: np.ndarray = cv2.imread(path)
