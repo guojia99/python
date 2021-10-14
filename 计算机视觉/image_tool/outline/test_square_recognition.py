@@ -5,6 +5,7 @@ Path = "./image/"
 # Images = ["矩形卡3.png", "矩形卡2.png", "矩形卡22.png"]
 Images = ["矩形卡22.png"]
 
+
 def t_squares1():
     for item in Images:
         img = cv.imread(f"{Path}/{item}")

@@ -1,5 +1,6 @@
 import re
 
+
 class Analysis(object):
     @staticmethod
     def config_to_list(config: str) -> list:
@@ -35,30 +36,11 @@ class Analysis(object):
                 num += 1
         return Analysis().list_to_config(datas)
 
+
 if __name__ == "__main__":
     data = """DeviceLinkSelector    0
 DeviceLinkHeartbeatMode	On
 DeviceStreamChannelSelector	0
 DeviceStreamChannelPacketSize	1500
-LUTValue	1908
-LUTIndex	478
-LUTValue	1912
-LUTIndex	479
-LUTValue	1916
-LUTIndex	480
-LUTValue	1920
-LUTIndex	481
-LUTValue	1924
-LUTIndex	482
-LUTValue	1928
-LUTIndex	483
-LUTValue	1932
-LUTIndex	484
-LUTValue	1936
-LUTIndex	485
-LUTValue	1940
-LUTIndex	486
-LUTValue	1944
-LUTIndex	487
-LUTValue	1948"""
-    print(Analysis().update_config(config=data, DeviceLinkSelector=1))
+"""
+    print(Analysis().update_config(config=data, DeviceLinkSelector=1, DeviceStreamChannelPacketSize=1600))
